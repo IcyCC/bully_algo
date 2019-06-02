@@ -64,7 +64,7 @@ class Channel {
 
 
 客户端
-```c++
+```c
 TcpConnPtr con = TcpConn::createConnection(&base, host, port);
 con->onState([=](const TcpConnPtr& con) {
     info("onState called state: %d", con->getState());
@@ -77,7 +77,7 @@ con->onRead([](const TcpConnPtr& con){
 ```
 
 服务端
-```c++
+```c
 TcpConnPtr con = TcpConn::createConnection(&base, host, port);
 con->onState([=](const TcpConnPtr& con) {
     info("onState called state: %d", con->getState());
