@@ -78,14 +78,11 @@ con->onRead([](const TcpConnPtr& con){
 
 服务端
 ```c
-TcpConnPtr con = TcpConn::createConnection(&base, host, port);
-con->onState([=](const TcpConnPtr& con) {
-    info("onState called state: %d", con->getState());
-});
-con->onRead([](const TcpConnPtr& con){
-    info("recv %lu bytes", con->getInput().size());
-    con->send("ok");
-    con->getInput().clear();
+TcpServer echo(&base); //创建服务器
+int r = echo.bind("", 2099); //绑定端口
+exitif(r, "bind failed %d %s", errno, strerror(errno));
+echo.onConnRead([](const TcpConnPtr& con) {
+    con->send(con->getInput()); // echo 读取的数据
 });
 ```
 
