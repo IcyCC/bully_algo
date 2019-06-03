@@ -4,7 +4,7 @@
 #include <sys/poll.h>
 #include <exception>
 #include "poller.h"
-
+#include "event_loop.h"
 
 namespace handy {
     void PollerBase::loopOnce(int waitMs) {
@@ -34,6 +34,7 @@ namespace handy {
                 }
             }
         }
+        delete[] files;
     }
 
     void PollerBase::AddChannel(Channel *ch) {
