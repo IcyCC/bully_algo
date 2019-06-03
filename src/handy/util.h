@@ -17,6 +17,9 @@ namespace handy {
         noncopyable &operator=(const noncopyable &) = delete;
     };
 
+    int64_t TimeMicro();
+    inline int64_t TimeMilli() { return TimeMicro() / 1000; }
+
     typedef std::string Buffer;
 }
 #endif //BULLY_ALGO_UTIL_H
