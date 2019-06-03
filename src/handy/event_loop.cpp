@@ -3,6 +3,7 @@
 //
 
 #include "event_loop.h"
+#include "poller.h"
 
 namespace handy {
 
@@ -10,13 +11,14 @@ namespace handy {
         done = true;
     }
 
-    Timer::Timer(handy::Task *_task, int64_t _at, EventLoop *_base, int64_t _repeat) {
+    Timer::Timer(const Task &_task, int64_t _at, EventLoop *_base, int64_t _repeat) {
         t = _task;
-        id = base->timer_id;
         at = _at;
         base = _base;
         repeat = _repeat;
     }
+
+    EventLoop * EventLoop::_self = NULL;
 
     EventLoop::EventLoop() {
         poller = new PollerBase();
@@ -27,31 +29,31 @@ namespace handy {
         delete poller;
     }
 
-    EventLoop *EventLoop::GetInstance() {
-        if (self == NULL) {
-            EventLoop::self = new EventLoop();
+    EventLoop  *EventLoop::GetInstance() {
+        if (EventLoop::_self == NULL) {
+            EventLoop::_self = new EventLoop();
         }
-        return self;
+        return EventLoop::_self;
     }
 
-    Timer *EventLoop::CreateAtTimeTask(handy::Task &task, int64_t _at) {
+    Timer *EventLoop::CreateAtTimeTask(const Task &task, int64_t _at) {
         timer_id ++;
-        auto t = new Timer(&task, _at, this, -1);
+        auto t = new Timer(task, _at, this, 0);
         timers.push(t);
         return t;
     }
 
-    Timer *EventLoop::CreateDelayTask(Task &task, int64_t time) {
+    Timer *EventLoop::CreateDelayTask(const Task &task, int64_t time) {
         timer_id ++;
         int64_t at = TimeMilli() + time;
         auto t = CreateAtTimeTask(task, at);
         return t;
     }
 
-    Timer * EventLoop::CreateReaptTask(Task &task, int64_t time) {
+    Timer * EventLoop::CreateReaptTask(const Task &task, int64_t time) {
         timer_id ++;
         int64_t at = TimeMilli() + time;
-        auto t = new Timer(&task, at, this, time);
+        auto t = new Timer(task, at, this, time);
         timers.push(t);
         return t;
     }
@@ -67,7 +69,7 @@ namespace handy {
             }
             auto t = timers.top();
             auto now_time = TimeMilli();
-            if(t->at < now_time) {
+            if(t->at > now_time) {
                 // 最近的任务小于当前时间
                 break;
             } else {

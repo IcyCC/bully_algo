@@ -6,10 +6,11 @@
 #define BULLY_ALGO_POLLER_H
 
 #include"util.h"
-#include"channel.h"
 #include <map>
 
 namespace handy {
+    class Channel;
+
     class PollerBase : private noncopyable {
     public:
         void AddChannel(Channel *ch);
