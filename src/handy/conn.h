@@ -6,6 +6,8 @@
 #define BULLY_ALGO_CONN_H
 #include<string>
 #include<functional>
+#include<unistd.h>
+#include<cstring>
 #include"util.h"
 #include"event_loop.h"
 
@@ -23,7 +25,7 @@ namespace handy
             Connected,
             Closed,
             Failed,
-            };
+            } _state;
         private:
             EventLoop *_base;
             Channel *_channel;
