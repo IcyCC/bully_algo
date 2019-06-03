@@ -34,6 +34,7 @@ namespace handy {
                 }
             }
         }
+        delete[] files;
     }
 
     void PollerBase::AddChannel(Channel *ch) {
