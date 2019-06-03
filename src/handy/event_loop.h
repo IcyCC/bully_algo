@@ -8,34 +8,61 @@
 #include <poll.h>
 #include <functional>
 #include <queue>
+#include <vector>
 #include"util.h"
 #include "poller.h"
 
 
 namespace handy {
-    typedef  std::function<void()> Task;
+    typedef std::function<void()> Task;
+
+    class EventLoop;
 
     class Timer : public noncopyable {
-        private:
-            Task t; 
-            int _at; //s 执行时间
-        public: 
-            bool Cancel();
+    public:
+        int id;
+        EventLoop *base;
+        Task *t;
+        int64_t at; //s 执行时间
+        bool done;
+        int64_t repeat;
+    public:
+        Timer(Task *task, int64_t _at, EventLoop *_base, int64_t _repeat);
+
+
+        void setDone();
+
+        static bool cmp(const Timer &lhs, const Timer &rhs) {
+            return lhs.at < rhs.at;
+        }
     };
 
     class EventLoop {
-        private:
-            std::priority_queue<Timer*> _timers;
-        public:
-            PollerBase * poller;
-        public:
-            void loopOnce();
-            void RunLoop();
+    public:
+        int timer_id;
+        std::priority_queue<Timer *, std::vector<Timer *>, decltype(Timer::cmp)> timers;
+    public:
+        PollerBase *poller;
+    private:
+        EventLoop();
 
-            void CreateDelayTask(Task &task, int time);
-            void CreateAtTimeTask(Task &task, int _at); 
-            void CreateReaptTask(Task &task, int time);
-            
+        ~EventLoop();
+
+        static EventLoop *self;
+    public:
+
+        EventLoop *GetInstance();
+
+        void loopOnce();
+
+        void RunLoop();
+
+        Timer *CreateAtTimeTask(Task &task, int64_t _at);
+
+        Timer *CreateDelayTask(Task &task, int64_t time);
+
+        Timer *CreateReaptTask(Task &task, int64_t time);
+
     };
 }
 
