@@ -3,6 +3,7 @@
 //
 
 #include "conn.h"
+#include <fcntl.h>
 
 namespace handy {
     void TcpConn::Send(Buffer &msg)
@@ -50,7 +51,7 @@ namespace handy {
                 } else if (sended == -1 && errno == EINTR) {
                     continue;
                 } else if (sended == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-                    
+
                     break;
                 }
             }
@@ -59,6 +60,46 @@ namespace handy {
                 send_buffer.clear();
             }
         }
+    }
+
+    TcpConn::TcpConn(EventLoop *base, int fd)
+    {
+        _base = base;
+        _state = State::Connected;
+        delete _channel;
+        _channel = new Channel(base, fd, 0); 
+        _channel->EnableRead(true);
+        _channel->EnableWrite(true);
+        _channel->OnRead([this] { this->handleRead(*this); });
+        _channel->OnWrite([this] { this->handleWrite(*this); });
+    }
+
+    TcpConn::TcpConn(EventLoop *base, const std::string &host, unsigned short port, int timeout, const std::string &localip)
+    {
+        auto peer_addr = IPv4Addr(host, port);
+        int fd = socket(AF_INET, SOCK_STREAM, 0);
+        int flags = fcntl(fd, F_GETFL, 0);
+        fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+        int r = 0;
+        if(localip.size()) {
+            auto local_addr = IPv4Addr(localip, 0);
+            r = bind(fd, (struct sockaddr *) &local_addr.addr_, sizeof(struct sockaddr));
+        }
+        if(!r) {
+            r = connect(fd, (struct sockaddr *) &peer_addr.addr_, sizeof(struct sockaddr));
+        }
+        if(r == 0) {
+            // connect error
+            exit(1);
+        }
+        _state = State::Connected;
+        _base = base;
+        delete _channel;
+        _channel = new Channel(base, fd, 0); 
+        _channel->EnableRead(true);
+        _channel->EnableWrite(true);
+        _channel->OnRead([this] { this->handleRead(*this); });
+        _channel->OnWrite([this] { this->handleWrite(*this); });
     }
 
     int TcpServer::Bind(const std::string &host, unsigned short port, bool reusePort = false)
@@ -82,6 +123,25 @@ namespace handy {
         if(listen(fd, 20)) {
             close(fd);
             exit(1);
+        }
+        delete _listen_channel;
+        EventLoop *b = EventLoop::GetInstance();
+        _listen_channel = new Channel(b, fd, 0);
+        _listen_channel->EnableRead(true);
+        _listen_channel->OnRead([this] { handleAccept(); });
+    }
+
+    void TcpServer::handleAccept()
+    {
+        struct sockaddr_in raddr;
+        socklen_t rsz = sizeof(raddr);
+        int lfd = _listen_channel->fd;
+        int cfd;
+        while(lfd >= 0 && (cfd = accept(lfd, (struct sockaddr *) &raddr, &rsz)) >= 0) {
+            sockaddr_in peer, local;
+            socklen_t alen = sizeof(peer);
+            EventLoop *b = EventLoop::GetInstance();
+            conns_map[cfd] = std::make_shared<TcpConn>(b, cfd);
         }
     }
 }
