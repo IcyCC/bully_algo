@@ -32,13 +32,13 @@ namespace handy
         public:
            void Send(Buffer &msg);
 
-            void OnRead(const Task &cb) {
+            void OnRead(const TcpCallBack &cb) {
                 readcb_ = cb;
             };
             //当tcp缓冲区可写时回调
-            void OnWritable(const Task &cb) { writablecb_ = cb; }
+            void OnWritable(const TcpCallBack &cb) { writablecb_ = cb; }
             // tcp状态改变时回调
-            void OnState(const Task &cb) { statecb_ = cb; }
+            void OnState(const TcpCallBack &cb) { statecb_ = cb; }
 
         public:
             void handleRead(const TcpConn &con);

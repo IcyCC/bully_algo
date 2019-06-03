@@ -9,15 +9,16 @@
 #include <functional>
 #include <queue>
 #include"util.h"
+#include "poller.h"
 
 
 namespace handy {
-    typedef  std::function<void(void*)> Task;
+    typedef  std::function<void()> Task;
 
     class Timer : public noncopyable {
         private:
             Task t; 
-            int _at; // 执行时间
+            int _at; //s 执行时间
         public: 
             bool Cancel();
     };
@@ -25,7 +26,8 @@ namespace handy {
     class EventLoop {
         private:
             std::priority_queue<Timer*> _timers;
-
+        public:
+            PollerBase * poller;
         public:
             void loopOnce();
             void RunLoop();

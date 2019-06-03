@@ -4,21 +4,25 @@
 
 #ifndef BULLY_ALGO_POLLER_H
 #define BULLY_ALGO_POLLER_H
+
 #include"util.h"
 #include"channel.h"
+#include <map>
 
-namespace handy
-{
+namespace handy {
     class PollerBase : private noncopyable {
-        public:
-        int64_t id_;
-        int lastActive_;
+    public:
+        void AddChannel(Channel *ch);
 
-        void AddChannel(Channel *ch) ;
-        void RemoveChannel(Channel *ch) ;
+        void RemoveChannel(Channel *ch);
+
         void UpdateChannel(Channel *ch);
+
         void loopOnce(int waitMs);
-};
+
+    private:
+        std::map<int, handy::Channel *> _channels;
+    };
 
 } // namespace handy
 

@@ -9,41 +9,35 @@
 #include "event_loop.h"
 namespace handy {
     class Channel : public noncopyable{
-
+    public:
         // base为事件管理器，fd为通道内部的fd，events为通道关心的事件
-        Channel(EventLoop *base, int fd, int events);
+        Channel(handy::EventLoop *_base, int _fd, int _events);
         ~Channel();
-        EventLoop *getBase() { return base_; }
-        int fd() { return fd_; }
+        EventLoop *getBase() { return base; }
         //通道id
-        int64_t id() { return id_; }
-        short events() { return events_; }
         //关闭通道
-        void close();
+        void Close();
 
         //挂接事件处理器
-        void onRead(const Task &readcb) { readcb_ = readcb; }
-        void onWrite(const Task &writecb) { writecb_ = writecb; }
-        void onRead(Task &&readcb) { readcb_ = std::move(readcb); }
-        void onWrite(Task &&writecb) { writecb_ = std::move(writecb); }
+        void OnRead(const Task &_readcb) { readcb = _readcb; }
+        void OnWrite(const Task &_writecb) { writecb = _writecb; }
+        void OnRead(Task &&_readcb) { readcb = std::move(_readcb); }
+        void OnWrite(Task &&_writecb) { writecb = std::move(_writecb); }
 
         //启用读写监听
-        void enableRead(bool enable);
-        void enableWrite(bool enable);
-        void enableReadWrite(bool readable, bool writable);
-        bool readEnabled();
-        bool writeEnabled();
+        void EnableRead(bool enable);
+        void EnableWrite(bool enable);
 
         //处理读写事件
-        void handleRead() { readcb_(); }
-        void handleWrite() { writecb_(); }
+        void handleRead() { readcb(); }
+        void handleWrite() { writecb(); }
 
-    protected:
-        EventLoop *base_;
-        int fd_;
-        short events_;
-        int64_t id_;
-        std::function<void()> readcb_, writecb_, errorcb_;
+    public:
+        EventLoop *base;
+        int fd;
+        short events;
+        int64_t id;
+        Task readcb, writecb, errorcb;
     };
 }
 
