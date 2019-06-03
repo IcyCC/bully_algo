@@ -30,7 +30,7 @@ namespace handy
             Channel *_channel;
             Buffer send_buffer, read_buffer;
         public:
-           void Send(Buffer &msg);
+            void Send(Buffer &msg);
 
             void OnRead(const TcpCallBack &cb) {
                 readcb_ = cb;
