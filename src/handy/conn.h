@@ -7,7 +7,6 @@
 #include<string>
 #include<functional>
 #include"util.h"
-#include"channel.h"
 #include"event_loop.h"
 
 namespace handy

@@ -5,7 +5,6 @@
 #ifndef BULLY_ALGO_HANDY_H
 #define BULLY_ALGO_HANDY_H
 #include "util.h"
-#include "channel.h"
 #include "event_loop.h"
 #include "poller.h"
 #include "conn.h"
