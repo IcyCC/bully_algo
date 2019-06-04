@@ -42,7 +42,7 @@ namespace bully {
         };
     private:
         int ELECTION_FREQ = 1000;
-        int TIMEOUT = 1000;
+        int TIMEOUT = 2000;
     private:
         handy::EventLoop * loop;
     public:

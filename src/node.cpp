@@ -23,11 +23,11 @@ namespace bully {
         loop = handy::EventLoop::GetInstance();
         this->ComOnRead = [this](handy::TcpConn *conn,const std::string &res) {
             auto msg = Message(res);
-            handy::PutLog(res);
             if (this->nodeState == NodeStateType::ELECTING && msg.msg == "Answer") {
                 // 当s前节点为选举中 并且收到了节点的响应, 取消选举
                 this->election_timeout_timer->Cancel();
                 this->nodeState = NodeStateType ::FLLOW;
+                handy::PutLog(std::to_string(id)+ " 收到 "+ std::to_string(msg.from) + " 响应"+", 选举取消");
             } else if (msg.msg == "Election") {
                 // 当前节点为选举中 并且收到了选举请求 做出回应
                 neighbor_conns[msg.from]->Send(Message(id, msg.from, "Answer").ToString());
@@ -38,6 +38,8 @@ namespace bully {
                 // 当前节点为从节点 收到了pong响应 取消心跳超时的选举
                 this->ping_timeout_timer->Cancel();
             } else if (msg.msg == "Victory") {
+                handy::PutLog(std::to_string(id)+ " 收到 "+ " 响应"+", 更换leader "+std::to_string(msg.from));
+                this->election_timeout_timer->Cancel();
                 this->nodeState = NodeStateType::FLLOW;
                 this->leader_id = msg.from;
             }
@@ -54,7 +56,7 @@ namespace bully {
             if (nodeState == NodeStateType::FLLOW) {
                 // 从节点每秒发送一次心跳
                 this->pingLeader();
-                handy::PutLog("检测心跳 " + std::to_string(id));
+                handy::PutLog(std::to_string(id) + "检测心跳 " + "当前leader " + std::to_string(this->leader_id));
 
                 // 发送超时了开始选举
                 this->ping_timeout_timer = loop->CreateDelayTask([this]() {
@@ -64,7 +66,6 @@ namespace bully {
                     // 选举超时了设置自己为leader
                     this->election_timeout_timer = loop->CreateDelayTask([this]() {
                         handy::PutLog("选举超时"  + std::to_string(id) +" 成为leader ");
-                        this->nodeState = LEADER;
                         victory();
                     }, TIMEOUT);
                 }, TIMEOUT);
@@ -96,19 +97,24 @@ namespace bully {
     };
 
     void Node::pingLeader() {
-        neighbor_conns[leader_id]->Send(Message(id, leader_id, "Ping").ToString());
+        if (this->leader_id != id) {
+            neighbor_conns[leader_id]->Send(Message(id, leader_id, "Ping").ToString());
+        }
     }
 
     void Node::victory() {
+        this->nodeState = LEADER;
+        this->leader_id = id;
         for (auto &i : neighbor_conns) {
-            if (i.first > id) {
-                neighbor_conns[i.first]->Send(Message(id, i.first, "Victory").ToString());
-            }
+            neighbor_conns[i.first]->Send(Message(id, i.first, "Victory").ToString());
         }
     }
 
     void Node::stop() {
-       this->server->OnConnMsg(handy::defaultTcpDataBack);
+       loop->poller->RemoveChannel(this->server->_listen_channel);
+       for (auto i : this->server->conns_map) {
+           loop->poller->RemoveChannel(i.second->_channel);
+       }
     }
 }
 

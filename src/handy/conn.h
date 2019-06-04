@@ -41,7 +41,7 @@ namespace handy
             Closed,
             Failed,
             } _state;
-        private:
+    public:
             EventLoop *_base;
             Channel *_channel;
             Buffer *send_buffer, *read_buffer;
