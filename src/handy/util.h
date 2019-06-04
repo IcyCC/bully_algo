@@ -34,7 +34,7 @@ namespace handy {
         virtual std::string GetBuffer() = 0;
         virtual void Clear() = 0;
         virtual std::size_t Size() = 0;
-        virtual std::string GetSubstr(std::size_t pos, std::size_t n);
+        virtual std::string GetSubstr(std::size_t pos, std::size_t n) = 0;
     };
 
     class BufferCRLF: public Buffer {

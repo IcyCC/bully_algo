@@ -88,7 +88,7 @@ namespace handy {
         _state = State::Invalid;
     }
 
-    void TcpConn::attach(int fd)
+    void TcpConn::Attach(int fd)
     {
         _state = State::Connected;
         _channel = new Channel(_base, fd, 0);
@@ -100,7 +100,7 @@ namespace handy {
         conncb_(this);
     }
 
-    void TcpConn::connect(const std::string &host, unsigned short port, int timeout, const std::string &localip)
+    void TcpConn::Connect(const std::string &host, unsigned short port, int timeout, const std::string &localip)
     {
         readcb_ = defaultTcpCallBack;
         writablecb_ = defaultTcpCallBack;
