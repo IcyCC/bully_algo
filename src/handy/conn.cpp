@@ -14,7 +14,7 @@ namespace handy {
 
     void TcpConn::handleRead(TcpConn * con)
     {
-        while (_state == State::Connected) {
+        if (_state == State::Connected) {
             int rd;
             char buff[4096];
             if(_channel->fd >= 0) {
@@ -22,24 +22,25 @@ namespace handy {
                 rd = read(_channel->fd, buff, 4096);
             }
             if(rd == -1 && errno == EINTR) {
-                continue;
+                
             } else if(rd == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
                 if (readcb_ && read_buffer->Size()) {
                     readcb_(con);
                 }
-                auto res = read_buffer->GetLine();
-                if(res.size()) msgcb_(con);
-                break;
+                
             } else if(_channel->fd == -1 || rd == 0 || rd == -1) {
                 disconncb_(this);
                 cleanup(this);
-                break;
+                
             } else {
                 read_buffer->Push(buff);
                 readcb_(con);
             }
         }
-        
+        auto res = read_buffer->GetLine();
+        if(res.size()) {
+            msgcb_(con);
+        }
     }
 
     void TcpConn::handleWrite(TcpConn * con)
@@ -95,6 +96,7 @@ namespace handy {
         _channel->EnableWrite(true);
         _channel->OnRead([this] { this->handleRead(this); });
         _channel->OnWrite([this] { this->handleWrite(this); });
+        _channel->OnError([this] { this->handleError(this); });
         _base->poller->AddChannel(_channel);
         conncb_(this);
     }
@@ -156,6 +158,8 @@ namespace handy {
             exit(1);
         }
     #endif
+        int flags = fcntl(fd, F_GETFL, 0);
+        fcntl(fd, F_SETFL, flags | O_NONBLOCK);
         if(bind(fd, (struct sockaddr *) &addr.addr_, sizeof(struct sockaddr))) {
             close(fd);
             exit(1);
@@ -167,6 +171,7 @@ namespace handy {
         delete _listen_channel;
         _listen_channel = new Channel(_base, fd, 0);
         _listen_channel->OnRead([this] { handleAccept(); });
+        _listen_channel->OnError([this] { exit(1); });
         _base->poller->AddChannel(_listen_channel);
         _listen_channel->EnableRead(true);
         return 1;
@@ -178,16 +183,16 @@ namespace handy {
         socklen_t rsz = sizeof(raddr);
         int lfd = _listen_channel->fd;
         int cfd;
-        while(lfd >= 0 && (cfd = accept(lfd, (struct sockaddr *) &raddr, &rsz)) >= 0) {
-            sockaddr_in peer, local;
-            socklen_t alen = sizeof(peer);
+        if (lfd >= 0 && (cfd = accept(lfd, (struct sockaddr *) &raddr, &rsz)) >= 0) {
             auto con = std::make_shared<TcpConn>(_base, _type);
+            con->OnMsg(msgcb_);
+            con->OnRead(readcb_);
+            con->OnError(errcb_);
+            con->OnState(statecb_);
+            con->OnDisConnted(disconncb_);
             con->Attach(cfd);
             conns_map[cfd] = con;
             createcb_(conns_map[cfd].get());
-            statecb_(conns_map[cfd].get());
-            con->OnMsg(msgcb_);
-            con->OnRead(readcb_);
         }
     }
 }
