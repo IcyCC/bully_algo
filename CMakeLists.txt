@@ -4,7 +4,6 @@ project(bully_algo)
 set(CMAKE_CXX_STANDARD 14)
 
 add_executable(bully_algo
-        src/main.cpp
         src/handy/event_loop.cpp
         src/handy/event_loop.h
         src/handy/conn.cpp
@@ -15,4 +14,7 @@ add_executable(bully_algo
         src/handy/util.h
         src/node.cpp
         src/node.h
-        src/handy/handy.h)
+        src/handy/handy.h
+#        tests/timer_test.cpp
+        tests/conn_tests_server.cpp
+        )

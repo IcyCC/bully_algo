@@ -6,17 +6,25 @@
 #define BULLY_ALGO_CONN_H
 #include<string>
 #include<functional>
+#include <sys/socket.h>
 #include<unistd.h>
 #include<cstring>
 #include<map>
+#include <errno.h>
 #include"util.h"
 #include"event_loop.h"
 
 namespace handy
 {
+
+    class TcpConn;
+
+    typedef std::function<void(TcpConn * conn)> TcpCallBack;
+    inline void defaultTcpCallBack(TcpConn * conn){
+
+    };
     class TcpConn : public noncopyable {
         public:
-            typedef std::function<void(const TcpConn &)> TcpCallBack;
         private:
             TcpCallBack readcb_, writablecb_, statecb_;
         public:
@@ -46,28 +54,42 @@ namespace handy
             TcpConn(EventLoop *base, int fd);
             TcpConn(EventLoop *base, const std::string &host, unsigned short port, int timeout, const std::string &localip = "");
             ~TcpConn() { delete _channel; }
-            void handleRead(const TcpConn &con);
-            void handleWrite(const TcpConn &con);
+            void handleRead(TcpConn * con);
+            void handleWrite(TcpConn* con);
         public: 
     };
 
     class TcpServer: public noncopyable {
+        public:
+        TcpServer(const std::string &_host, unsigned short _port) {
+            host = _host;
+            port = _port;
+            _base = EventLoop::GetInstance();
+            _listen_channel = NULL;
+
+            readcb_ = defaultTcpCallBack;
+            msgcb_ = defaultTcpCallBack;
+            statecb_ = defaultTcpCallBack;
+            createcb_= defaultTcpCallBack;
+        }
+            std::string host;
+            unsigned int port;
+            EventLoop * _base;
         private:
             Channel *_listen_channel;
             std::map<int, std::shared_ptr<TcpConn>> conns_map;
-            TcpConn::TcpCallBack statecb_, readcb_, msgcb_ ,createcb_;
+            TcpCallBack statecb_, readcb_, msgcb_ ,createcb_;
             void handleAccept();
         public:
-            TcpServer(): _listen_channel(NULL) {}
-            TcpServer(const std::string &host, unsigned short port, bool reusePort = false);
-            int Bind(const std::string &host, unsigned short port, bool reusePort = false);
-            void onConnCreate(const TcpConn::TcpCallBack &cb) { createcb_ = cb; }
-            void onConnState(const TcpConn::TcpCallBack &cb) { statecb_ = cb; }
-            void onConnRead(const TcpConn::TcpCallBack &cb) {
+
+            int Bind(bool reusePort = false);
+            void onConnCreate(const TcpCallBack &cb) { createcb_ = cb; }
+            void onConnState(const TcpCallBack &cb) { statecb_ = cb; }
+            void onConnRead(const TcpCallBack &cb) {
                 readcb_ = cb;
                             }
             // 消息处理与Read回调冲突，只能调用一个
-            void onConnMsg(const TcpConn::TcpCallBack &cb) {
+            void onConnMsg(const TcpCallBack &cb) {
                 msgcb_ = cb;
             }
     };
