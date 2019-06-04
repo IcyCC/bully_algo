@@ -27,17 +27,24 @@ namespace handy {
                 if (readcb_ && read_buffer->Size()) {
                     readcb_(con);
                 }
-                auto res = read_buffer->GetLine();
-                if(res.size()) msgcb_(con);
+                
             } else if(_channel->fd == -1 || rd == 0 || rd == -1) {
                 disconncb_(this);
                 cleanup(this);
+                
             } else {
                 read_buffer->Push(buff);
                 readcb_(con);
             }
         }
-        
+        while (true){
+            auto res = read_buffer->GetLine();
+            if(res.size()) {
+                msgcb_(con, res);
+            } else {
+                break;
+            }
+        }
     }
 
     void TcpConn::handleWrite(TcpConn * con)
@@ -72,7 +79,7 @@ namespace handy {
         readcb_ = defaultTcpCallBack;
         writablecb_ = defaultTcpCallBack;
         statecb_ = defaultTcpCallBack;
-        msgcb_ = defaultTcpCallBack;
+        msgcb_ = defaultTcpDataBack;
         errcb_ = defaultTcpCallBack;
         conncb_ = defaultTcpCallBack ;
         disconncb_ = defaultTcpCallBack;
@@ -95,6 +102,7 @@ namespace handy {
                 [this] { this->handleRead(this);
                 });
         _channel->OnWrite([this] { this->handleWrite(this); });
+        _channel->OnError([this] { this->handleError(this); });
         _base->poller->AddChannel(_channel);
         conncb_(this);
     }
@@ -104,7 +112,7 @@ namespace handy {
         readcb_ = defaultTcpCallBack;
         writablecb_ = defaultTcpCallBack;
         statecb_ = defaultTcpCallBack;
-        msgcb_ = defaultTcpCallBack;
+        msgcb_ = defaultTcpDataBack;
         errcb_ = defaultTcpCallBack;
         conncb_ = defaultTcpCallBack ;
         disconncb_ = defaultTcpCallBack;
@@ -136,7 +144,7 @@ namespace handy {
         _state = State::Closed;
         _base->poller->RemoveChannel(_channel);
         statecb_(con);
-        readcb_ = writablecb_ = statecb_ = msgcb_ = errcb_ = conncb_ = disconncb_ = nullptr;
+        readcb_ = writablecb_ = statecb_  = errcb_ = conncb_ = disconncb_ = nullptr;
         Channel *ch = _channel;
         _channel = NULL;
         delete ch;
@@ -169,6 +177,7 @@ namespace handy {
         delete _listen_channel;
         _listen_channel = new Channel(_base, fd, 0);
         _listen_channel->OnRead([this] { handleAccept(); });
+        _listen_channel->OnError([this] { exit(1); });
         _base->poller->AddChannel(_listen_channel);
         _listen_channel->EnableRead(true);
         return 1;
@@ -184,12 +193,14 @@ namespace handy {
             sockaddr_in peer, local;
             socklen_t alen = sizeof(peer);
             auto con = std::make_shared<TcpConn>(_base, _type);
+            con->OnMsg(msgcb_);
+            con->OnRead(readcb_);
+            con->OnError(errcb_);
+            con->OnState(statecb_);
+            con->OnDisConnted(disconncb_);
             con->Attach(cfd);
             conns_map[cfd] = con;
             createcb_(conns_map[cfd].get());
-            statecb_(conns_map[cfd].get());
-            con->OnMsg(msgcb_);
-            con->OnRead(readcb_);
         }
     }
 }
