@@ -18,6 +18,11 @@ namespace bully {
         int to;
         std::string msg;
         Message(const std::string &  s);
+        Message(int _from, int _to, std::string _msg){
+            from = _from;
+            to = _to;
+            msg = _msg;
+        };
 
         std::string ToString();
 
@@ -59,8 +64,8 @@ namespace bully {
     public:
         std::function<void (handy::TcpConn * conn)> ComOnRead;
         void Serve(); // 运行服务
-        void election(){};
-        void pingLeader(){};
+        void election();
+        void pingLeader();
         Node(int _id, int _port, int _leader_id, NodeStateType _state);
     };
 }

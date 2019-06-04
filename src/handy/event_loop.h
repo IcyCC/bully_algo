@@ -50,12 +50,12 @@ namespace handy {
 
     class EventLoop {
     public:
-        int timer_id;
+        int timer_id = 0;
         std::set<int> cancel_timer_ids;
         std::priority_queue<std::shared_ptr<Timer>, std::vector<std::shared_ptr<Timer>>, TimerPtrCompare> timers;
 
         int getTimerId() {
-            timer_id++;
+            timer_id = timer_id + 1;
             return timer_id;
         };
 

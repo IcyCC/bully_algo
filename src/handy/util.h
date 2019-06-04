@@ -7,6 +7,7 @@
 
 #include<string>
 #include <vector>
+#include <iostream>
 #include <netinet/in.h>
 
 namespace handy {
@@ -97,6 +98,10 @@ namespace handy {
         struct sockaddr_in addr_;
         IPv4Addr(const std::string &host, unsigned short port);
         IPv4Addr(const struct sockaddr_in &addr) : addr_(addr) {};
+    };
+
+    inline void PutLog(const std::string s) {
+        std::cout<<s<<std::endl;
     };
 }
 #endif //BULLY_ALGO_UTIL_H

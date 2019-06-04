@@ -24,15 +24,15 @@ namespace handy {
 
             // 触发到事件
             for (int i = 0; i < poll_size; i++) {
-                if (files[i].revents | POLLIN) {
+                if (files[i].revents & POLLIN) {
                     // 可读
                     _channels[files[i].fd]->handleRead();
                 }
-                if (files[i].revents | POLLOUT) {
+                if (files[i].revents & POLLOUT) {
                     // 可写
                     _channels[files[i].fd]->handleWrite();
                 }
-                if (files[i].revents | POLLERR) {
+                if (files[i].revents & POLLERR) {
                     _channels[files[i].fd]->handleError();
                 }
             }

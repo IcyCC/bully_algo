@@ -15,7 +15,8 @@ add_executable(bully_algo
         src/node.cpp
         src/node.h
         src/handy/handy.h
+        src/main.cpp
 #        tests/timer_test.cpp
-        tests/conn_server_tests.cpp
+#        tests/conn_server_tests.cpp
 #        tests/bully_node.cpp
         )

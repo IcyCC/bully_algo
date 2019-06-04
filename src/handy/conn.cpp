@@ -156,6 +156,8 @@ namespace handy {
             exit(1);
         }
     #endif
+        int flags = fcntl(fd, F_GETFL, 0);
+        fcntl(fd, F_SETFL, flags | O_NONBLOCK);
         if(bind(fd, (struct sockaddr *) &addr.addr_, sizeof(struct sockaddr))) {
             close(fd);
             exit(1);
@@ -178,7 +180,7 @@ namespace handy {
         socklen_t rsz = sizeof(raddr);
         int lfd = _listen_channel->fd;
         int cfd;
-        while(lfd >= 0 && (cfd = accept(lfd, (struct sockaddr *) &raddr, &rsz)) >= 0) {
+        if(lfd >= 0 && (cfd = accept(lfd, (struct sockaddr *) &raddr, &rsz)) >= 0) {
             sockaddr_in peer, local;
             socklen_t alen = sizeof(peer);
             auto con = std::make_shared<TcpConn>(_base, _type);

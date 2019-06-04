@@ -14,28 +14,30 @@ namespace bully {
     };
 
     std::string Message::ToString(){
-        return std::to_string(from) + " " + std::to_string(to) + " " + msg + "\r\n";
+        auto res = std::to_string(from) + " " + std::to_string(to) + " " + msg  + " \r\n";
+        return res;
     };
 
 
     Node::Node(int _id, int _port, int _leader_id, bully::Node::NodeStateType _state) {
-
+        loop = handy::EventLoop::GetInstance();
         this->ComOnRead = [this](handy::TcpConn * conn){
-            auto msg = Message(conn->Read());
-
+            auto s = conn->Read();
+            auto msg = Message(s);
+            handy::PutLog(s);
             if (this->nodeState == NodeStateType::ELECTING && msg.msg == "Answer"){
                 // 当s前节点为选举中 并且收到了节点的响应, 取消选举
                 this->election_timeout_timer->Cancel();
             }
 
-            else if (this->nodeState == NodeStateType::FLLOW && msg.msg == "Election") {
+            else if (msg.msg == "Election") {
                 // 当前节点为选举中 并且收到了选举请求 做出回应
-                conn->Send("Answer");
+                conn->Send(Message(id, msg.from, "Answer").ToString());
             }
 
             else if (this->nodeState == NodeStateType::LEADER && msg.msg == "Ping") {
                 // 当前节点为leader 收到了ping回复pong
-                conn->Send("Pong");
+                conn->Send(Message(id, msg.from, "Pong").ToString());
             } else if (this->nodeState == NodeStateType::FLLOW && msg.msg == "Pong"){
                 // 当前节点为从节点 收到了pong响应 取消心跳超时的选举
                 this->ping_timeout_timer->Cancel();
@@ -48,28 +50,46 @@ namespace bully {
         server = new handy::TcpServer("0.0.0.0", _port, handy::BufferType::BUFF_CRLF);
         server->OnConnRead(ComOnRead);
         server->Bind();
-    }
-    void Node::Serve() {
+
         this->ping_timer = loop->CreateRepeatTask([this](){
             if (nodeState == NodeStateType::FLLOW) {
-                 // 从节点每秒发送一次心跳
-                 this->pingLeader();
-                 // 发送超时了开始选举
-                this->ping_timeout_timer = loop->CreateDelayTask([this](){
-                      this->nodeState = NodeStateType::ELECTING;
+                // 从节点每秒发送一次心跳
+                this->pingLeader();
+                handy::PutLog("检测心跳 " + std::to_string(id));
 
+                // 发送超时了开始选举
+                this->ping_timeout_timer = loop->CreateDelayTask([this](){
+                    handy::PutLog("检测心跳超时 开始选举 " + std::to_string(id));
+                    this->nodeState = NodeStateType::ELECTING;
                     this->election(); //发送选举消息
                     // 选举超时了设置自己为leader
                     this->election_timeout_timer = loop->CreateDelayTask([this](){
+                        handy::PutLog("选举超时 成为leader" + std::to_string(id));
                         this->nodeState = LEADER;
                     }, TIMEOUT);
                 },TIMEOUT);
             }
 
 
-            }, ELECTION_FREQ); // 建立心跳任务
+        }, ELECTION_FREQ); // 建立心跳任务
+
+    }
+    void Node::Serve() {
 
         loop->RunLoop();
+    }
+
+
+    void Node::election(){
+        for (auto &i : neighbor_conns) {
+            if (i.first > id) {
+                neighbor_conns[i.first]->Send(Message(id, i.first, "Election").ToString());
+            }
+        }
+    };
+
+    void Node::pingLeader() {
+        neighbor_conns[leader_id]->Send(Message(id, leader_id, "Ping").ToString());
     }
 
 }

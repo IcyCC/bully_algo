@@ -1,17 +1,29 @@
 #include <iostream>
 #include "handy/handy.h"
+#include "node.h"
 
 int main() {
     auto loop = handy::EventLoop::GetInstance();
 
-    auto task1 = [](){std::cout<<"test "<<handy::TimeMilli()<<std::endl;};
-    auto  t1 = loop->CreateRepeatTask(task1, 1000);
+    auto n1 = bully::Node(1, 5001, 3, bully::Node::FLLOW);
 
-    auto task2 = [t1](){
-        t1->Cancel();
-        std::cout<<"Cancel "<<std::endl;
-    };
-    auto t2 = loop->CreateDelayTask(task2, 5000);
+
+    auto n2 = bully::Node(2, 5002, 3, bully::Node::FLLOW);
+
+    auto n3 = bully::Node(3, 5003, 3, bully::Node::LEADER);
+
+
+    n1.PushNeighbor(2, "0.0.0.0", 5002);
+    n1.PushNeighbor(3, "0.0.0.0", 5003);
+
+
+    n2.PushNeighbor(1, "0.0.0.0", 5001);
+    n2.PushNeighbor(3, "0.0.0.0", 5003);
+
+
+    n3.PushNeighbor(1, "0.0.0.0", 5001);
+    n3.PushNeighbor(2, "0.0.0.0", 5002);
+
     loop->RunLoop();
 
     return 0;
