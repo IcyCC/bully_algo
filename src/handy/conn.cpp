@@ -14,7 +14,7 @@ namespace handy {
 
     void TcpConn::handleRead(TcpConn * con)
     {
-        while (_state == State::Connected) {
+        if (_state == State::Connected) {
             int rd;
             char buff[4096];
             if(_channel->fd >= 0) {
@@ -22,17 +22,15 @@ namespace handy {
                 rd = read(_channel->fd, buff, 4096);
             }
             if(rd == -1 && errno == EINTR) {
-                continue;
+
             } else if(rd == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
                 if (readcb_ && read_buffer->Size()) {
                     readcb_(con);
                 }
-                break;
             } else if(_channel->fd == -1 || rd == 0 || rd == -1) {
                 // TODO: handle peer socket closed
                 disconncb_(this);
                 cleanup(this);
-                break;
             } else {
                 read_buffer->Push(buff);
                 readcb_(con);
@@ -92,13 +90,15 @@ namespace handy {
         _channel = new Channel(_base, fd, 0);
         _channel->EnableRead(true);
         _channel->EnableWrite(true);
-        _channel->OnRead([this] { this->handleRead(this); });
+        _channel->OnRead(
+                [this] { this->handleRead(this);
+                });
         _channel->OnWrite([this] { this->handleWrite(this); });
         _base->poller->AddChannel(_channel);
         conncb_(this);
     }
 
-    void TcpConn::connect(const std::string &host, unsigned short port, int timeout, const std::string &localip)
+    void TcpConn::Connect(const std::string &host, unsigned short port, int timeout, const std::string &localip)
     {
         readcb_ = defaultTcpCallBack;
         writablecb_ = defaultTcpCallBack;
@@ -176,15 +176,20 @@ namespace handy {
         struct sockaddr_in raddr;
         socklen_t rsz = sizeof(raddr);
         int lfd = _listen_channel->fd;
-        int cfd;
-        while(lfd >= 0 && (cfd = accept(lfd, (struct sockaddr *) &raddr, &rsz)) >= 0) {
-            sockaddr_in peer, local;
-            socklen_t alen = sizeof(peer);
-            auto con = std::make_shared<TcpConn>(_base, _type);
-            con->attach(cfd);
-            conns_map[cfd] = con;
-            createcb_(conns_map[cfd].get());
-            statecb_(conns_map[cfd].get());
+        int cfd = -1;
+        if (lfd > 0 ){
+            cfd = accept(lfd, (struct sockaddr *) &raddr, &rsz);
+            if(cfd > 0) {
+                sockaddr_in peer, local;
+                socklen_t alen = sizeof(peer);
+                auto con = std::make_shared<TcpConn>(_base, _type);
+                con->attach(cfd);
+                con->OnRead(readcb_);
+                con->OnWritable()
+                conns_map[cfd] = con;
+                createcb_(conns_map[cfd].get());
+                statecb_(conns_map[cfd].get());
+            }
         }
     }
 }

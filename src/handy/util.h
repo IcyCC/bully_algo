@@ -6,6 +6,7 @@
 #define BULLY_ALGO_UTIL_H
 
 #include<string>
+#include <vector>
 #include <netinet/in.h>
 
 namespace handy {
@@ -17,6 +18,25 @@ namespace handy {
         noncopyable(const noncopyable &) = delete;
         noncopyable &operator=(const noncopyable &) = delete;
     };
+
+    inline std::vector<std::string> SpliteString(const std::string& src,const std::string & sp) {
+        // 分割字符串
+        std::string::size_type pos1, pos2=0;
+        std::vector<std::string> v;
+        pos2 = src.find(sp);
+        pos1 = 0;
+        while (std::string::npos != pos2) {
+            v.push_back(src.substr(pos1, pos2 - pos1));
+
+            pos1 = pos2 + sp.size();
+            pos2 = src.find(sp, pos1);
+        }
+        if (pos1 != src.length()) {
+            v.push_back(src.substr(pos1));
+        }
+        return v;
+    };
+
 
     int64_t TimeMicro();
     inline int64_t TimeMilli() { return TimeMicro() / 1000; }
@@ -34,7 +54,7 @@ namespace handy {
         virtual std::string GetBuffer() = 0;
         virtual void Clear() = 0;
         virtual std::size_t Size() = 0;
-        virtual std::string GetSubstr(std::size_t pos, std::size_t n);
+        virtual std::string GetSubstr(std::size_t pos, std::size_t n)=0;
     };
 
     class BufferCRLF: public Buffer {

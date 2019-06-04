@@ -10,22 +10,27 @@ int main() {
 
     handy::TcpServer server("127.0.0.1", 5000);
 
-    server.onConnCreate([](handy::TcpConn * c){
+    server.OnConnCreate([](handy::TcpConn * c){
        std::cout<<"服务器收到链接"<<std::endl;
     });
 
-    server.onConnRead([](handy::TcpConn * c){
+    server.OnConnRead([](handy::TcpConn * c){
         std::cout<<c->ReadBuffer()<<std::endl;
         c->Send("OK!");
     });
     server.Bind();
 
-    handy::TcpConn client(loop,"127.0.0.1", 5000, 100, "127.0.0.1");
+    handy::TcpConn client(loop);
+    client.Connect("127.0.0.1", 5000, 100, "127.0.0.1");
 
-    client.OnState([](handy::TcpConn * c){
+
+    client.OnConnected([](handy::TcpConn * c){
         std::cout<<"连接到服务器"<<std::endl;
-        c->Send("HI");
     });
+
+    loop->CreateDelayTask([&client](){
+        client.Send("HI");
+    }, 100);
 
     client.OnRead([](handy::TcpConn * c){
         std::cout<<"收到服务器消息"<<c->ReadBuffer()<<std::endl;
