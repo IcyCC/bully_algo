@@ -164,7 +164,8 @@ void Node::Serve() {
                     this->wait_success_timer.Cancel();
                 }
                 this->wait_success_timer.Cancel();
-                this->beat_timer = loop->CreateRepeatTask(beat_func, )
+                this->beat_timer = loop->CreateRepeatTask(beat_func, 5000);
+                this->end_beat_timer = loop->CreateDelayTask(end_beat_func, 10000);
             } else if (message.op == "election" && this->id == largest_id(this->id, this->neighbors)) {
                 this->success();
             } else if (message.op == "alive" && this->state == state_follow) {
