@@ -65,13 +65,17 @@ namespace handy
 
         public:
             TcpConn(EventLoop *base, BufferType type = BufferType::BUFF_CRLF);
-            void attach(int fd);
-            void connect(const std::string &host, unsigned short port, int timeout, const std::string &localip = "");
+            void Attach(int fd);
+            void Connect(const std::string &host, unsigned short port, int timeout, const std::string &localip = "");
             ~TcpConn() { delete _channel; }
             void handleRead(TcpConn * con);
             void handleWrite(TcpConn* con);
+            void handleError(TcpConn* con) {
+                errcb_(this); 
+                cleanup(this);
+            }
+        private: 
             void cleanup(TcpConn * con);
-        public: 
     };
 
     class TcpServer: public noncopyable {
@@ -100,15 +104,15 @@ namespace handy
         public:
 
             int Bind(bool reusePort = false);
-            void onConnError(const TcpCallBack &cb) { errcb_ = cb; }
-            void onConnDisConnect(const TcpCallBack &cb) { disconncb_ = cb; };
-            void onConnCreate(const TcpCallBack &cb) { createcb_ = cb; }
-            void onConnState(const TcpCallBack &cb) { statecb_ = cb; }
-            void onConnRead(const TcpCallBack &cb) {
+            void OnConnError(const TcpCallBack &cb) { errcb_ = cb; }
+            void OnConnDisConnect(const TcpCallBack &cb) { disconncb_ = cb; };
+            void OnConnCreate(const TcpCallBack &cb) { createcb_ = cb; }
+            void OnConnState(const TcpCallBack &cb) { statecb_ = cb; }
+            void OnConnRead(const TcpCallBack &cb) {
                 readcb_ = cb;
                             }
             // 消息处理与Read回调冲突，只能调用一个
-            void onConnMsg(const TcpCallBack &cb) {
+            void OnConnMsg(const TcpCallBack &cb) {
                 msgcb_ = cb;
             }
     };
