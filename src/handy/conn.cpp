@@ -27,6 +27,8 @@ namespace handy {
                 if (readcb_ && read_buffer->Size()) {
                     readcb_(con);
                 }
+                auto res = read_buffer->GetLine();
+                if(res.size()) msgcb_(con);
                 break;
             } else if(_channel->fd == -1 || rd == 0 || rd == -1) {
                 // TODO: handle peer socket closed
@@ -185,6 +187,8 @@ namespace handy {
             conns_map[cfd] = con;
             createcb_(conns_map[cfd].get());
             statecb_(conns_map[cfd].get());
+            con->OnMsg(msgcb_);
+            con->OnRead(readcb_);
         }
     }
 }

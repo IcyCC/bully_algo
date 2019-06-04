@@ -20,7 +20,8 @@ int main() {
     });
     server.Bind();
 
-    handy::TcpConn client(loop,"127.0.0.1", 5000, 100, "127.0.0.1");
+    handy::TcpConn client(loop);
+    client.connect("127.0.0.1", 5000, 100, "127.0.0.1");
 
     client.OnState([](handy::TcpConn * c){
         std::cout<<"连接到服务器"<<std::endl;
