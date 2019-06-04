@@ -7,9 +7,9 @@
 #include <fcntl.h>
 
 namespace handy {
-    void TcpConn::Send(const Buffer &msg)
+    void TcpConn::Send(const std::string &msg)
     {
-        send_buffer += msg;
+        send_buffer->Push(msg);
     }
 
     void TcpConn::handleRead(TcpConn * con)
@@ -24,7 +24,7 @@ namespace handy {
             if(rd == -1 && errno == EINTR) {
                 continue;
             } else if(rd == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-                if (readcb_ && read_buffer.size()) {
+                if (readcb_ && read_buffer->Size()) {
                     readcb_(con);
                 }
                 break;
@@ -34,7 +34,7 @@ namespace handy {
                 cleanup(this);
                 break;
             } else {
-                read_buffer += buff;
+                read_buffer->Push(buff);
                 readcb_(con);
             }
         }
@@ -44,10 +44,10 @@ namespace handy {
     void TcpConn::handleWrite(TcpConn * con)
     {
         if(_state == State::Connected) {
-            int len = send_buffer.size();
+            int len = send_buffer->Size();
             int pos = 0;
             while(len) {
-                std::string buff = send_buffer.substr(pos, 4096);
+                std::string buff = send_buffer->GetSubstr(pos, 4096);
                 auto sended = write(_channel->fd, buff.c_str(), buff.size());
                 if (sended > 0) {
                     pos += sended;
@@ -63,12 +63,12 @@ namespace handy {
             }
             if (!len && writablecb_) {
                 writablecb_(con);
-                send_buffer.clear();
+                send_buffer->Clear();
             }
         }
     }
 
-    TcpConn::TcpConn(EventLoop *base)
+    TcpConn::TcpConn(EventLoop *base, BufferType type)
     {
         readcb_ = defaultTcpCallBack;
         writablecb_ = defaultTcpCallBack;
@@ -77,6 +77,10 @@ namespace handy {
         errcb_ = defaultTcpCallBack;
         conncb_ = defaultTcpCallBack ;
         disconncb_ = defaultTcpCallBack;
+
+        BufferFactory factory;
+        read_buffer = factory.CreateBuffer(type);
+        send_buffer = factory.CreateBuffer(type);
 
         _base = base;
         _state = State::Invalid;
@@ -125,7 +129,7 @@ namespace handy {
 
     void TcpConn::cleanup(TcpConn * con)
     {
-        if (readcb_ && read_buffer.size()) {
+        if (readcb_ && read_buffer->Size()) {
             readcb_(con);
         }
         _state = State::Closed;
@@ -176,7 +180,7 @@ namespace handy {
         while(lfd >= 0 && (cfd = accept(lfd, (struct sockaddr *) &raddr, &rsz)) >= 0) {
             sockaddr_in peer, local;
             socklen_t alen = sizeof(peer);
-            auto con = std::make_shared<TcpConn>(_base);
+            auto con = std::make_shared<TcpConn>(_base, _type);
             con->attach(cfd);
             conns_map[cfd] = con;
             createcb_(conns_map[cfd].get());
