@@ -31,7 +31,6 @@ namespace handy {
                 if(res.size()) msgcb_(con);
                 break;
             } else if(_channel->fd == -1 || rd == 0 || rd == -1) {
-                // TODO: handle peer socket closed
                 disconncb_(this);
                 cleanup(this);
                 break;
@@ -126,7 +125,7 @@ namespace handy {
             // connect error
             exit(1);
         }
-        attach(fd);
+        Attach(fd);
     }
 
     void TcpConn::cleanup(TcpConn * con)
@@ -183,7 +182,7 @@ namespace handy {
             sockaddr_in peer, local;
             socklen_t alen = sizeof(peer);
             auto con = std::make_shared<TcpConn>(_base, _type);
-            con->attach(cfd);
+            con->Attach(cfd);
             conns_map[cfd] = con;
             createcb_(conns_map[cfd].get());
             statecb_(conns_map[cfd].get());
