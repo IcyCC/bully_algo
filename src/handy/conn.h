@@ -6,6 +6,9 @@
 #define BULLY_ALGO_CONN_H
 #include<string>
 #include<functional>
+#include<unistd.h>
+#include<cstring>
+#include<map>
 #include"util.h"
 #include"event_loop.h"
 
@@ -23,13 +26,13 @@ namespace handy
             Connected,
             Closed,
             Failed,
-            };
+            } _state;
         private:
             EventLoop *_base;
             Channel *_channel;
             Buffer send_buffer, read_buffer;
         public:
-           void Send(Buffer &msg);
+            void Send(Buffer &msg);
 
             void OnRead(const TcpCallBack &cb) {
                 readcb_ = cb;
@@ -40,6 +43,9 @@ namespace handy
             void OnState(const TcpCallBack &cb) { statecb_ = cb; }
 
         public:
+            TcpConn(EventLoop *base, int fd);
+            TcpConn(EventLoop *base, const std::string &host, unsigned short port, int timeout, const std::string &localip = "");
+            ~TcpConn() { delete _channel; }
             void handleRead(const TcpConn &con);
             void handleWrite(const TcpConn &con);
         public: 
@@ -47,8 +53,13 @@ namespace handy
 
     class TcpServer: public noncopyable {
         private:
+            Channel *_listen_channel;
+            std::map<int, std::shared_ptr<TcpConn>> conns_map;
             TcpConn::TcpCallBack statecb_, readcb_, msgcb_ ,createcb_;
+            void handleAccept();
         public:
+            TcpServer(): _listen_channel(NULL) {}
+            TcpServer(const std::string &host, unsigned short port, bool reusePort = false);
             int Bind(const std::string &host, unsigned short port, bool reusePort = false);
             void onConnCreate(const TcpConn::TcpCallBack &cb) { createcb_ = cb; }
             void onConnState(const TcpConn::TcpCallBack &cb) { statecb_ = cb; }
