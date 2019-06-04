@@ -32,15 +32,18 @@ namespace bully {
 
             else if (msg.msg == "Election") {
                 // 当前节点为选举中 并且收到了选举请求 做出回应
-                conn->Send(Message(id, msg.from, "Answer").ToString());
+                neighbor_conns[msg.from]->Send(Message(id, msg.from, "Answer").ToString());
             }
 
             else if (this->nodeState == NodeStateType::LEADER && msg.msg == "Ping") {
                 // 当前节点为leader 收到了ping回复pong
-                conn->Send(Message(id, msg.from, "Pong").ToString());
+                neighbor_conns[msg.from]->Send(Message(id, msg.from, "Pong").ToString());
             } else if (this->nodeState == NodeStateType::FLLOW && msg.msg == "Pong"){
                 // 当前节点为从节点 收到了pong响应 取消心跳超时的选举
                 this->ping_timeout_timer->Cancel();
+            } else if (msg.msg == "Victory") {
+                this->nodeState = NodeStateType::FLLOW;
+                this->leader_id = msg.from;
             }
         };
 
@@ -48,7 +51,7 @@ namespace bully {
         leader_id = _leader_id;
         nodeState = _state;
         server = new handy::TcpServer("0.0.0.0", _port, handy::BufferType::BUFF_CRLF);
-        server->OnConnRead(ComOnRead);
+        server->OnConnMsg(ComOnRead);
         server->Bind();
 
         this->ping_timer = loop->CreateRepeatTask([this](){
@@ -66,6 +69,7 @@ namespace bully {
                     this->election_timeout_timer = loop->CreateDelayTask([this](){
                         handy::PutLog("选举超时 成为leader" + std::to_string(id));
                         this->nodeState = LEADER;
+                        victory();
                     }, TIMEOUT);
                 },TIMEOUT);
             }
@@ -81,10 +85,16 @@ namespace bully {
 
 
     void Node::election(){
+        bool is_max = true;
         for (auto &i : neighbor_conns) {
             if (i.first > id) {
                 neighbor_conns[i.first]->Send(Message(id, i.first, "Election").ToString());
+                is_max = false;
             }
+        }
+
+        if (is_max) {
+            victory();
         }
     };
 
@@ -92,4 +102,16 @@ namespace bully {
         neighbor_conns[leader_id]->Send(Message(id, leader_id, "Ping").ToString());
     }
 
+    void Node::victory() {
+        for (auto &i : neighbor_conns) {
+            if (i.first > id) {
+                neighbor_conns[i.first]->Send(Message(id, i.first, "Victory").ToString());
+            }
+        }
+    }
+
+    void Node::stop(){
+        close(this->server->_listen_channel->fd);
+    }
 }
+

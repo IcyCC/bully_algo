@@ -38,7 +38,6 @@ namespace bully {
             neighbors.insert(std::make_pair(_id, p));
             auto c = new handy::TcpConn(handy::EventLoop::GetInstance(), handy::BufferType::BUFF_CRLF);
             c->Connect(_host, _port, TIMEOUT, "0.0.0.0");
-            c->OnRead(this->ComOnRead);
             neighbor_conns.insert(std::make_pair(_id, c));
         };
     private:
@@ -64,8 +63,11 @@ namespace bully {
     public:
         std::function<void (handy::TcpConn * conn)> ComOnRead;
         void Serve(); // 运行服务
-        void election();
-        void pingLeader();
+        void election(); // 选举
+        void pingLeader(); // 检测
+        void victory(); //胜利
+
+        void stop();
         Node(int _id, int _port, int _leader_id, NodeStateType _state);
     };
 }

@@ -24,6 +24,10 @@ int main() {
     n3.PushNeighbor(1, "0.0.0.0", 5001);
     n3.PushNeighbor(2, "0.0.0.0", 5002);
 
+    loop->CreateDelayTask([&n3](){
+        n3.stop();
+        }, 6000);
+
     loop->RunLoop();
 
     return 0;

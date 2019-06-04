@@ -91,7 +91,7 @@ namespace handy
             std::string host;
             unsigned int port;
             EventLoop * _base;
-        private:
+    public:
             Channel *_listen_channel;
             std::map<int, std::shared_ptr<TcpConn>> conns_map;
             TcpCallBack statecb_, readcb_, msgcb_ ,createcb_ , errcb_, disconncb_;
