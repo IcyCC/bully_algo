@@ -61,7 +61,7 @@ namespace bully {
         handy::TcpServer *server;
         std::map<int, handy::TcpConn *> neighbor_conns;
     public:
-        std::function<void (handy::TcpConn * conn)> ComOnRead;
+        std::function<void (handy::TcpConn * conn,const std::string & msg )> ComOnRead;
         void Serve(); // 运行服务
         void election(); // 选举
         void pingLeader(); // 检测

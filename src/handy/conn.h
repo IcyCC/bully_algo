@@ -20,13 +20,19 @@ namespace handy
     class TcpConn;
 
     typedef std::function<void(TcpConn * conn)> TcpCallBack;
+    typedef std::function<void(TcpConn * conn, const std::string& msg)> TcpDataCallBack;
     inline void defaultTcpCallBack(TcpConn * conn){
+
+    };
+
+    inline void defaultTcpDataBack(TcpConn * conn, const std::string & msg){
 
     };
     class TcpConn : public noncopyable {
         public:
         private:
-            TcpCallBack readcb_, writablecb_, statecb_, msgcb_, errcb_, conncb_, disconncb_;
+            TcpCallBack readcb_, writablecb_, statecb_, errcb_, conncb_, disconncb_;
+            TcpDataCallBack msgcb_;
         public:
           enum State {
             Invalid = 1,
@@ -52,7 +58,7 @@ namespace handy
                 return read_buffer->GetBuffer();
             };
             void OnConnected(const TcpCallBack &cb) { conncb_ = cb; }
-            void OnMsg(const TcpCallBack &cb) { msgcb_ = cb; }
+            void OnMsg(const TcpDataCallBack &cb) { msgcb_ = cb; }
             void OnError(const TcpCallBack &cb) { errcb_ = cb; }
             void OnDisConnted(const TcpCallBack &cb) { disconncb_ = cb; }
             void OnRead(const TcpCallBack &cb) {
@@ -87,7 +93,7 @@ namespace handy
             _listen_channel = NULL;
 
             readcb_ = defaultTcpCallBack;
-            msgcb_ = defaultTcpCallBack;
+            msgcb_ = defaultTcpDataBack;
             statecb_ = defaultTcpCallBack;
             createcb_= defaultTcpCallBack;
             _type = type;
@@ -98,7 +104,8 @@ namespace handy
     public:
             Channel *_listen_channel;
             std::map<int, std::shared_ptr<TcpConn>> conns_map;
-            TcpCallBack statecb_, readcb_, msgcb_ ,createcb_ , errcb_, disconncb_;
+            TcpCallBack statecb_, readcb_ ,createcb_ , errcb_, disconncb_;
+            TcpDataCallBack msgcb_;
             BufferType _type;
             void handleAccept();
         public:
@@ -112,7 +119,7 @@ namespace handy
                 readcb_ = cb;
                             }
             // 消息处理与Read回调冲突，只能调用一个
-            void OnConnMsg(const TcpCallBack &cb) {
+            void OnConnMsg(const TcpDataCallBack &cb) {
                 msgcb_ = cb;
             }
     };

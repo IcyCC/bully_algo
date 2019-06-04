@@ -39,6 +39,18 @@ namespace handy {
     };
 
 
+    inline bool IsEndWith(std::string s, std::string m) {
+        if (m.length() > s.length()) {
+            return false;
+        }
+        for (int i = 0; i < m.length(); i++) {
+            if (m[i] != s[s.length() - m.length() + i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     int64_t TimeMicro();
     inline int64_t TimeMilli() { return TimeMicro() / 1000; }
 
@@ -62,6 +74,7 @@ namespace handy {
     private:
         std::string buffer;
         std::string sep;
+        std::string tmp_buffer;
     public:
         BufferCRLF(): sep("\r\n") {}
         ~BufferCRLF() = default;
@@ -76,8 +89,8 @@ namespace handy {
             if(pos == buffer.npos)
                 res = "";
             else {
-                res = buffer.substr(0, pos);
-                buffer = buffer.substr(pos);
+                res = buffer.substr(0, pos+sep.length());
+                buffer = buffer.substr(pos+sep.length());
             }
             return res;
         }
