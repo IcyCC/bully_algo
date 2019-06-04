@@ -70,6 +70,10 @@ namespace handy
             ~TcpConn() { delete _channel; }
             void handleRead(TcpConn * con);
             void handleWrite(TcpConn* con);
+            void handleError(TcpConn* con) {
+                errcb_(this); 
+                cleanup(this);
+            }
         private: 
             void cleanup(TcpConn * con);
     };
