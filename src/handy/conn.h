@@ -65,8 +65,8 @@ namespace handy
 
         public:
             TcpConn(EventLoop *base, BufferType type = BufferType::BUFF_CRLF);
-            void attach(int fd);
-            void connect(const std::string &host, unsigned short port, int timeout, const std::string &localip = "");
+            void Attach(int fd);
+            void Connect(const std::string &host, unsigned short port, int timeout, const std::string &localip = "");
             ~TcpConn() { delete _channel; }
             void handleRead(TcpConn * con);
             void handleWrite(TcpConn* con);

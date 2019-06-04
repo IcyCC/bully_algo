@@ -27,6 +27,8 @@ namespace handy {
                 if (readcb_ && read_buffer->Size()) {
                     readcb_(con);
                 }
+                auto res = read_buffer->GetLine();
+                if(res.size()) msgcb_(con);
                 break;
             } else if(_channel->fd == -1 || rd == 0 || rd == -1) {
                 // TODO: handle peer socket closed
@@ -86,7 +88,7 @@ namespace handy {
         _state = State::Invalid;
     }
 
-    void TcpConn::attach(int fd)
+    void TcpConn::Attach(int fd)
     {
         _state = State::Connected;
         _channel = new Channel(_base, fd, 0);
@@ -98,7 +100,7 @@ namespace handy {
         conncb_(this);
     }
 
-    void TcpConn::connect(const std::string &host, unsigned short port, int timeout, const std::string &localip)
+    void TcpConn::Connect(const std::string &host, unsigned short port, int timeout, const std::string &localip)
     {
         readcb_ = defaultTcpCallBack;
         writablecb_ = defaultTcpCallBack;
@@ -185,6 +187,8 @@ namespace handy {
             conns_map[cfd] = con;
             createcb_(conns_map[cfd].get());
             statecb_(conns_map[cfd].get());
+            con->OnMsg(msgcb_);
+            con->OnRead(readcb_);
         }
     }
 }
