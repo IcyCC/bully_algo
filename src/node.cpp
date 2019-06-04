@@ -51,7 +51,6 @@ namespace bully {
         server = new handy::TcpServer("0.0.0.0", _port, handy::BufferType::BUFF_CRLF);
         server->OnConnMsg(ComOnRead);
         server->Bind();
-
         this->ping_timer = loop->CreateRepeatTask([this]() {
             if (nodeState == NodeStateType::FLLOW) {
                 // 从节点每秒发送一次心跳
@@ -59,12 +58,12 @@ namespace bully {
                 handy::PutLog(std::to_string(id) + "检测心跳 " + "当前leader " + std::to_string(this->leader_id));
 
                 // 发送超时了开始选举
-                this->ping_timeout_timer = loop->CreateDelayTask([this]() {
+                ping_timeout_timer = loop->CreateDelayTask([this]() {
                     handy::PutLog("检测心跳超时 开始选举 " + std::to_string(id));
                     this->nodeState = NodeStateType::ELECTING;
                     this->election(); //发送选举消息
                     // 选举超时了设置自己为leader
-                    this->election_timeout_timer = loop->CreateDelayTask([this]() {
+                    election_timeout_timer = loop->CreateDelayTask([this]() {
                         handy::PutLog("选举超时"  + std::to_string(id) +" 成为leader ");
                         victory();
                     }, TIMEOUT);
