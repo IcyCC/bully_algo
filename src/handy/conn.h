@@ -40,7 +40,17 @@ namespace handy
             Channel *_channel;
             Buffer send_buffer, read_buffer;
         public:
-            void Send(Buffer &msg);
+            void Send(const Buffer &msg);
+
+            std::string Read() {
+                auto b = read_buffer;
+                read_buffer.clear();
+                return b;
+            };
+
+            std::string ReadBuffer() {
+                return read_buffer;
+            };
 
             void OnRead(const TcpCallBack &cb) {
                 readcb_ = cb;
