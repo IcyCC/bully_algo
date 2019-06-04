@@ -16,6 +16,10 @@
 namespace handy {
     typedef std::function<void()> Task;
 
+    inline  void DeafultTask (){
+
+    };
+
     class EventLoop;
 
     class Timer : public noncopyable {
@@ -86,6 +90,7 @@ namespace handy {
     class Channel : public noncopyable {
     public:
         // base为事件管理器，fd为通道内部的fd，events为通道关心的事件
+
         Channel(EventLoop *_base, int _fd, int _events);
 
         ~Channel();
@@ -114,6 +119,8 @@ namespace handy {
         void handleRead() { readcb(); }
 
         void handleWrite() { writecb(); }
+
+        void handleError() { errorcb(); };
 
     public:
         EventLoop *base;

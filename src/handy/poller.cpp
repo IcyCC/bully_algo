@@ -32,6 +32,9 @@ namespace handy {
                     // 可写
                     _channels[files[i].fd]->handleWrite();
                 }
+                if (files[i].revents | POLLERR) {
+                    _channels[files[i].fd]->handleError();
+                }
             }
         }
         delete[] files;

@@ -114,6 +114,9 @@ namespace handy {
 
 
     Channel::Channel(handy::EventLoop *_base, int _fd, int _events) {
+        readcb = DeafultTask;
+        writecb = DeafultTask;
+        errorcb = DeafultTask;
         base = _base;
         fd = _fd;
         events = _events;
@@ -121,6 +124,7 @@ namespace handy {
 
     Channel::~Channel(){
         Close();
+        base->poller->RemoveChannel(this);
     };
 
     void Channel::Close() {
