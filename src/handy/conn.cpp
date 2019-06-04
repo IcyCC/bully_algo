@@ -3,10 +3,11 @@
 //
 
 #include "conn.h"
+#include <sys/socket.h>
 #include <fcntl.h>
 
 namespace handy {
-    void TcpConn::Send(Buffer &msg)
+    void TcpConn::Send(const Buffer &msg)
     {
         send_buffer += msg;
     }
@@ -22,7 +23,7 @@ namespace handy {
             }
             if(rd == -1 && errno == EINTR) {
                 continue;
-            } else if(rd = -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+            } else if(rd == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
                 if (readcb_ && read_buffer.size()) {
                     readcb_(con);
                 }
@@ -32,6 +33,7 @@ namespace handy {
                 break;
             } else {
                 read_buffer += buff;
+                readcb_(con);
             }
         }
         
