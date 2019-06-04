@@ -65,13 +65,13 @@ namespace handy
 
         public:
             TcpConn(EventLoop *base, BufferType type = BufferType::BUFF_CRLF);
-            void attach(int fd);
+            void Attach(int fd);
             void Connect(const std::string &host, unsigned short port, int timeout, const std::string &localip = "");
             ~TcpConn() { delete _channel; }
             void handleRead(TcpConn * con);
             void handleWrite(TcpConn* con);
+        private: 
             void cleanup(TcpConn * con);
-        public: 
     };
 
     class TcpServer: public noncopyable {
@@ -108,7 +108,7 @@ namespace handy
                 readcb_ = cb;
                             }
             // 消息处理与Read回调冲突，只能调用一个
-            void onConnMsg(const TcpCallBack &cb) {
+            void OnConnMsg(const TcpCallBack &cb) {
                 msgcb_ = cb;
             }
     };

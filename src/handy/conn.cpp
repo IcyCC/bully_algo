@@ -27,8 +27,9 @@ namespace handy {
                 if (readcb_ && read_buffer->Size()) {
                     readcb_(con);
                 }
+                auto res = read_buffer->GetLine();
+                if(res.size()) msgcb_(con);
             } else if(_channel->fd == -1 || rd == 0 || rd == -1) {
-                // TODO: handle peer socket closed
                 disconncb_(this);
                 cleanup(this);
             } else {
@@ -84,7 +85,7 @@ namespace handy {
         _state = State::Invalid;
     }
 
-    void TcpConn::attach(int fd)
+    void TcpConn::Attach(int fd)
     {
         _state = State::Connected;
         _channel = new Channel(_base, fd, 0);
@@ -124,7 +125,7 @@ namespace handy {
             // connect error
             exit(1);
         }
-        attach(fd);
+        Attach(fd);
     }
 
     void TcpConn::cleanup(TcpConn * con)
@@ -176,20 +177,17 @@ namespace handy {
         struct sockaddr_in raddr;
         socklen_t rsz = sizeof(raddr);
         int lfd = _listen_channel->fd;
-        int cfd = -1;
-        if (lfd > 0 ){
-            cfd = accept(lfd, (struct sockaddr *) &raddr, &rsz);
-            if(cfd > 0) {
-                sockaddr_in peer, local;
-                socklen_t alen = sizeof(peer);
-                auto con = std::make_shared<TcpConn>(_base, _type);
-                con->attach(cfd);
-                con->OnRead(readcb_);
-                con->OnWritable()
-                conns_map[cfd] = con;
-                createcb_(conns_map[cfd].get());
-                statecb_(conns_map[cfd].get());
-            }
+        int cfd;
+        while(lfd >= 0 && (cfd = accept(lfd, (struct sockaddr *) &raddr, &rsz)) >= 0) {
+            sockaddr_in peer, local;
+            socklen_t alen = sizeof(peer);
+            auto con = std::make_shared<TcpConn>(_base, _type);
+            con->Attach(cfd);
+            conns_map[cfd] = con;
+            createcb_(conns_map[cfd].get());
+            statecb_(conns_map[cfd].get());
+            con->OnMsg(msgcb_);
+            con->OnRead(readcb_);
         }
     }
 }
