@@ -14,11 +14,12 @@ namespace bully {
             if (nodeState == NodeStateType::FLLOW) {
                  // 从节点每秒发送一次心跳
                  this->pingLeader();
+                 // 发送超时了开始选举
                 ping_timout_timer = loop->CreateDelayTask([this](){
                       this->nodeState = NodeStateType::ELECTING;
 
                     this->election(); //发送选举消息
-
+                    // 选举超时了设置自己为leader
                     this->election_timeout_timer = loop->CreateDelayTask([this](){
                         this->nodeState = LEADER;
                     }, 1000);
