@@ -106,7 +106,11 @@ namespace handy {
 
         void OnWrite(const Task &_writecb) { writecb = _writecb; }
 
+        void OnError(const Task &_errorcb) { errorcb = _errorcb; }
+
         void OnRead(Task &&_readcb) { readcb = std::move(_readcb); }
+
+        void OnError(Task &&_errorcb) { errorcb = std::move(_errorcb); }
 
         void OnWrite(Task &&_writecb) { writecb = std::move(_writecb); }
 
