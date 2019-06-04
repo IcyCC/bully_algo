@@ -14,7 +14,7 @@ namespace handy {
 
     void TcpConn::handleRead(TcpConn * con)
     {
-        while (_state == State::Connected) {
+        if (_state == State::Connected) {
             int rd;
             char buff[4096];
             if(_channel->fd >= 0) {
@@ -22,18 +22,18 @@ namespace handy {
                 rd = read(_channel->fd, buff, 4096);
             }
             if(rd == -1 && errno == EINTR) {
-                continue;
+                
             } else if(rd == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
                 if (readcb_ && read_buffer->Size()) {
                     readcb_(con);
                 }
                 auto res = read_buffer->GetLine();
                 if(res.size()) msgcb_(con);
-                break;
+                
             } else if(_channel->fd == -1 || rd == 0 || rd == -1) {
                 disconncb_(this);
                 cleanup(this);
-                break;
+                
             } else {
                 read_buffer->Push(buff);
                 readcb_(con);
@@ -178,7 +178,7 @@ namespace handy {
         socklen_t rsz = sizeof(raddr);
         int lfd = _listen_channel->fd;
         int cfd;
-        while(lfd >= 0 && (cfd = accept(lfd, (struct sockaddr *) &raddr, &rsz)) >= 0) {
+        if (lfd >= 0 && (cfd = accept(lfd, (struct sockaddr *) &raddr, &rsz)) >= 0) {
             sockaddr_in peer, local;
             socklen_t alen = sizeof(peer);
             auto con = std::make_shared<TcpConn>(_base, _type);
