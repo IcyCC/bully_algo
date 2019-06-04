@@ -30,6 +30,8 @@ namespace handy {
                 break;
             } else if(_channel->fd == -1 || rd == 0 || rd == -1) {
                 // TODO: handle peer socket closed
+                disconncb_(this);
+                cleanup(this);
                 break;
             } else {
                 read_buffer += buff;
@@ -53,8 +55,10 @@ namespace handy {
                 } else if (sended == -1 && errno == EINTR) {
                     continue;
                 } else if (sended == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-
+                    _channel->EnableWrite(true);
                     break;
+                } else {
+                    errcb_(this);
                 }
             }
             if (!len && writablecb_) {
@@ -64,27 +68,41 @@ namespace handy {
         }
     }
 
-    TcpConn::TcpConn(EventLoop *base, int fd)
+    TcpConn::TcpConn(EventLoop *base)
     {
         readcb_ = defaultTcpCallBack;
         writablecb_ = defaultTcpCallBack;
         statecb_ = defaultTcpCallBack;
+        msgcb_ = defaultTcpCallBack;
+        errcb_ = defaultTcpCallBack;
+        conncb_ = defaultTcpCallBack ;
+        disconncb_ = defaultTcpCallBack;
 
         _base = base;
+        _state = State::Invalid;
+    }
+
+    void TcpConn::attach(int fd)
+    {
         _state = State::Connected;
-        _channel = new Channel(base, fd, 0);
+        _channel = new Channel(_base, fd, 0);
         _channel->EnableRead(true);
         _channel->EnableWrite(true);
         _channel->OnRead([this] { this->handleRead(this); });
         _channel->OnWrite([this] { this->handleWrite(this); });
         _base->poller->AddChannel(_channel);
+        conncb_(this);
     }
 
-    TcpConn::TcpConn(EventLoop *base, const std::string &host, unsigned short port, int timeout, const std::string &localip)
+    void TcpConn::connect(const std::string &host, unsigned short port, int timeout, const std::string &localip)
     {
         readcb_ = defaultTcpCallBack;
         writablecb_ = defaultTcpCallBack;
         statecb_ = defaultTcpCallBack;
+        msgcb_ = defaultTcpCallBack;
+        errcb_ = defaultTcpCallBack;
+        conncb_ = defaultTcpCallBack ;
+        disconncb_ = defaultTcpCallBack;
 
         auto peer_addr = IPv4Addr(host, port);
         int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -96,20 +114,27 @@ namespace handy {
             r = bind(fd, (struct sockaddr *) &local_addr.addr_, sizeof(struct sockaddr));
         }
         if(!r) {
-            r = connect(fd, (struct sockaddr *) &peer_addr.addr_, sizeof(struct sockaddr));
+            r = ::connect(fd, (struct sockaddr *) &peer_addr.addr_, sizeof(struct sockaddr));
         }
         if(r == 0) {
             // connect error
             exit(1);
         }
-        _state = State::Connected;
-        _base = base;
-        _channel = new Channel(base, fd, 0);
-        _channel->EnableRead(true);
-        _channel->EnableWrite(true);
-        _channel->OnRead([this] { this->handleRead(this); });
-        _channel->OnWrite([this] { this->handleWrite(this); });
-        _base->poller->AddChannel(_channel);
+        attach(fd);
+    }
+
+    void TcpConn::cleanup(TcpConn * con)
+    {
+        if (readcb_ && read_buffer.size()) {
+            readcb_(con);
+        }
+        _state = State::Closed;
+        _base->poller->RemoveChannel(_channel);
+        statecb_(con);
+        readcb_ = writablecb_ = statecb_ = msgcb_ = errcb_ = conncb_ = disconncb_ = nullptr;
+        Channel *ch = _channel;
+        _channel = NULL;
+        delete ch;
     }
 
     int TcpServer::Bind(bool reusePort)
@@ -151,7 +176,9 @@ namespace handy {
         while(lfd >= 0 && (cfd = accept(lfd, (struct sockaddr *) &raddr, &rsz)) >= 0) {
             sockaddr_in peer, local;
             socklen_t alen = sizeof(peer);
-            conns_map[cfd] = std::make_shared<TcpConn>(_base, cfd);
+            auto con = std::make_shared<TcpConn>(_base);
+            con->attach(cfd);
+            conns_map[cfd] = con;
             createcb_(conns_map[cfd].get());
             statecb_(conns_map[cfd].get());
         }

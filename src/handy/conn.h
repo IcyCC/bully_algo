@@ -26,7 +26,7 @@ namespace handy
     class TcpConn : public noncopyable {
         public:
         private:
-            TcpCallBack readcb_, writablecb_, statecb_;
+            TcpCallBack readcb_, writablecb_, statecb_, msgcb_, errcb_, conncb_, disconncb_;
         public:
           enum State {
             Invalid = 1,
@@ -51,7 +51,10 @@ namespace handy
             std::string ReadBuffer() {
                 return read_buffer;
             };
-
+            void OnConnected(const TcpCallBack &cb) { conncb_ = cb; }
+            void OnMsg(const TcpCallBack &cb) { msgcb_ = cb; }
+            void OnError(const TcpCallBack &cb) { errcb_ = cb; }
+            void OnDisConnted(const TcpCallBack &cb) { disconncb_ = cb; }
             void OnRead(const TcpCallBack &cb) {
                 readcb_ = cb;
             };
@@ -61,11 +64,13 @@ namespace handy
             void OnState(const TcpCallBack &cb) { statecb_ = cb; }
 
         public:
-            TcpConn(EventLoop *base, int fd);
-            TcpConn(EventLoop *base, const std::string &host, unsigned short port, int timeout, const std::string &localip = "");
+            TcpConn(EventLoop *base);
+            void attach(int fd);
+            void connect(const std::string &host, unsigned short port, int timeout, const std::string &localip = "");
             ~TcpConn() { delete _channel; }
             void handleRead(TcpConn * con);
             void handleWrite(TcpConn* con);
+            void cleanup(TcpConn * con);
         public: 
     };
 
@@ -88,11 +93,13 @@ namespace handy
         private:
             Channel *_listen_channel;
             std::map<int, std::shared_ptr<TcpConn>> conns_map;
-            TcpCallBack statecb_, readcb_, msgcb_ ,createcb_;
+            TcpCallBack statecb_, readcb_, msgcb_ ,createcb_ , errcb_, disconncb_;
             void handleAccept();
         public:
 
             int Bind(bool reusePort = false);
+            void onConnError(const TcpCallBack &cb) { errcb_ = cb; }
+            void onConnDisConnect(const TcpCallBack &cb) { disconncb_ = cb; };
             void onConnCreate(const TcpCallBack &cb) { createcb_ = cb; }
             void onConnState(const TcpCallBack &cb) { statecb_ = cb; }
             void onConnRead(const TcpCallBack &cb) {
