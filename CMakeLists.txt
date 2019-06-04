@@ -12,9 +12,10 @@ add_executable(bully_algo
         src/handy/poller.h
         src/handy/util.cpp
         src/handy/util.h
-        src/node.cpp
-        src/node.h
+#        src/node.cpp
+#        src/node.h
         src/handy/handy.h
-#        tests/timer_test.cpp
-        tests/conn_server_tests.cpp
+        tests/timer_test.cpp
+#        tests/conn_server_tests.cpp
+#        src/util.h
         )
