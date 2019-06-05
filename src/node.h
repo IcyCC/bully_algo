@@ -39,10 +39,13 @@ namespace bully {
             auto c = new handy::TcpConn(handy::EventLoop::GetInstance(), handy::BufferType::BUFF_CRLF);
             c->Connect(_host, _port, TIMEOUT, "0.0.0.0");
             neighbor_conns.insert(std::make_pair(_id, c));
+            neighbor_conns[_id]->OnError([_id](handy::TcpConn *conn){
+                handy::PutLog("错误" + std::to_string(_id));
+            });
         };
     private:
-        int ELECTION_FREQ = 1000;
-        int TIMEOUT = 1500;
+        int ELECTION_FREQ = 2000;
+        int TIMEOUT = 1000;
     private:
         handy::EventLoop * loop;
     public:

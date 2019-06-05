@@ -59,6 +59,9 @@ namespace bully {
         nodeState = _state;
         server = new handy::TcpServer("0.0.0.0", _port, handy::BufferType::BUFF_CRLF);
         server->OnConnMsg(ComOnRead);
+        server->OnConnError([](handy::TcpConn *conn){
+            handy::PutLog("发生错误");
+        });
         server->Bind();
         this->ping_timer = loop->CreateRepeatTask([this]() {
             if (nodeState == NodeStateType::FLLOW) {
