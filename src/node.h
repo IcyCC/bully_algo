@@ -41,8 +41,8 @@ namespace bully {
             neighbor_conns.insert(std::make_pair(_id, c));
         };
     private:
-        int ELECTION_FREQ = 2000;
-        int TIMEOUT = 1000;
+        int ELECTION_FREQ = 1000;
+        int TIMEOUT = 1500;
     private:
         handy::EventLoop * loop;
     public:
