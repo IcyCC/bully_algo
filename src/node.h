@@ -60,6 +60,7 @@ namespace bully {
         std::shared_ptr<handy::Timer> election_timeout_timer;
         std::shared_ptr<handy::Timer> ping_timer;
         std::shared_ptr<handy::Timer> ping_timeout_timer;
+        std::shared_ptr<handy::Timer> reconnect_timer;
     private:
         handy::TcpServer *server;
         std::map<int, handy::TcpConn *> neighbor_conns;

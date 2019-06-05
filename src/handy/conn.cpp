@@ -14,6 +14,7 @@ namespace handy {
 
     void TcpConn::handleRead(TcpConn * con)
     {
+
         if (_state == State::Connected) {
             int rd;
             char buff[4096];
@@ -27,11 +28,11 @@ namespace handy {
                 if (readcb_ && read_buffer->Size()) {
                     readcb_(con);
                 }
-                
+
             } else if(_channel->fd == -1 || rd == 0 || rd == -1) {
                 disconncb_(this);
                 cleanup(this);
-                
+
             } else {
                 read_buffer->Push(buff);
                 readcb_(con);
@@ -144,10 +145,9 @@ namespace handy {
         _state = State::Closed;
         _base->poller->RemoveChannel(_channel);
         statecb_(con);
-        readcb_ = writablecb_ = statecb_  = errcb_ = conncb_ = disconncb_ = nullptr;
         Channel *ch = _channel;
-        _channel = NULL;
-        delete ch;
+//        _channel = NULL;
+//        delete ch;
     }
 
     int TcpServer::Bind(bool reusePort)

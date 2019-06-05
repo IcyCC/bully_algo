@@ -63,6 +63,12 @@ namespace bully {
             handy::PutLog("发生错误");
         });
         server->Bind();
+        this->reconnect_timer = loop->CreateRepeatTask([this](){
+            for (auto &i : neighbor_conns){
+                auto p = neighbors[i.first];
+                i.second->Connect(p.first, p.second, TIMEOUT);
+            }
+        }, 500);
         this->ping_timer = loop->CreateRepeatTask([this]() {
             if (nodeState == NodeStateType::FLLOW) {
                 // 从节点每秒发送一次心跳
@@ -112,6 +118,13 @@ namespace bully {
     };
 
     void Node::pingLeader() {
+        if (this->neighbor_conns.find(this->leader_id) == this->neighbor_conns.end()){
+            if(this->ping_timeout_timer != NULL){
+                this->ping_timeout_timer->Cancel();
+                this->ping_timeout_timer = NULL;
+            }
+            return;
+        }
         if (this->leader_id != id) {
             neighbor_conns[leader_id]->Send(Message(id, leader_id, "Ping").ToString());
         }

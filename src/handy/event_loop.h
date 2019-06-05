@@ -12,6 +12,7 @@
 #include <set>
 #include "poller.h"
 #include"util.h"
+#include <exception>
 
 namespace handy {
     typedef std::function<void()> Task;
@@ -120,9 +121,22 @@ namespace handy {
         void EnableWrite(bool enable);
 
         //处理读写事件
-        void handleRead() { readcb(); }
+        void handleRead() {
+            try {
+                readcb();
+            } catch( std::exception) {
 
-        void handleWrite() { writecb(); }
+            }
+
+        }
+
+        void handleWrite() {
+            try {
+                writecb();
+            } catch( std::exception) {
+
+            }
+        }
 
         void handleError() { errorcb(); };
 
