@@ -14,6 +14,7 @@ namespace handy {
 
     void TcpConn::handleRead(TcpConn * con)
     {
+
         if (_state == State::Connected) {
             int rd;
             char buff[4096];
@@ -22,24 +23,28 @@ namespace handy {
                 rd = read(_channel->fd, buff, 4096);
             }
             if(rd == -1 && errno == EINTR) {
-                
+
             } else if(rd == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
                 if (readcb_ && read_buffer->Size()) {
                     readcb_(con);
                 }
-                
+
             } else if(_channel->fd == -1 || rd == 0 || rd == -1) {
                 disconncb_(this);
                 cleanup(this);
-                
+
             } else {
                 read_buffer->Push(buff);
                 readcb_(con);
             }
         }
-        auto res = read_buffer->GetLine();
-        if(res.size()) {
-            msgcb_(con);
+        while (true){
+            auto res = read_buffer->GetLine();
+            if(res.size()) {
+                msgcb_(con, res);
+            } else {
+                break;
+            }
         }
     }
 
@@ -75,7 +80,7 @@ namespace handy {
         readcb_ = defaultTcpCallBack;
         writablecb_ = defaultTcpCallBack;
         statecb_ = defaultTcpCallBack;
-        msgcb_ = defaultTcpCallBack;
+        msgcb_ = defaultTcpDataBack;
         errcb_ = defaultTcpCallBack;
         conncb_ = defaultTcpCallBack ;
         disconncb_ = defaultTcpCallBack;
@@ -94,7 +99,9 @@ namespace handy {
         _channel = new Channel(_base, fd, 0);
         _channel->EnableRead(true);
         _channel->EnableWrite(true);
-        _channel->OnRead([this] { this->handleRead(this); });
+        _channel->OnRead(
+                [this] { this->handleRead(this);
+                });
         _channel->OnWrite([this] { this->handleWrite(this); });
         _channel->OnError([this] { this->handleError(this); });
         _base->poller->AddChannel(_channel);
@@ -106,7 +113,7 @@ namespace handy {
         readcb_ = defaultTcpCallBack;
         writablecb_ = defaultTcpCallBack;
         statecb_ = defaultTcpCallBack;
-        msgcb_ = defaultTcpCallBack;
+        msgcb_ = defaultTcpDataBack;
         errcb_ = defaultTcpCallBack;
         conncb_ = defaultTcpCallBack ;
         disconncb_ = defaultTcpCallBack;
@@ -138,10 +145,9 @@ namespace handy {
         _state = State::Closed;
         _base->poller->RemoveChannel(_channel);
         statecb_(con);
-        readcb_ = writablecb_ = statecb_ = msgcb_ = errcb_ = conncb_ = disconncb_ = nullptr;
         Channel *ch = _channel;
-        _channel = NULL;
-        delete ch;
+//        _channel = NULL;
+//        delete ch;
     }
 
     int TcpServer::Bind(bool reusePort)
@@ -183,7 +189,9 @@ namespace handy {
         socklen_t rsz = sizeof(raddr);
         int lfd = _listen_channel->fd;
         int cfd;
-        if (lfd >= 0 && (cfd = accept(lfd, (struct sockaddr *) &raddr, &rsz)) >= 0) {
+        if(lfd >= 0 && (cfd = accept(lfd, (struct sockaddr *) &raddr, &rsz)) >= 0) {
+            sockaddr_in peer, local;
+            socklen_t alen = sizeof(peer);
             auto con = std::make_shared<TcpConn>(_base, _type);
             con->OnMsg(msgcb_);
             con->OnRead(readcb_);

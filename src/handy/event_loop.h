@@ -12,6 +12,7 @@
 #include <set>
 #include "poller.h"
 #include"util.h"
+#include <exception>
 
 namespace handy {
     typedef std::function<void()> Task;
@@ -50,12 +51,12 @@ namespace handy {
 
     class EventLoop {
     public:
-        int timer_id;
+        int timer_id = 0;
         std::set<int> cancel_timer_ids;
         std::priority_queue<std::shared_ptr<Timer>, std::vector<std::shared_ptr<Timer>>, TimerPtrCompare> timers;
 
         int getTimerId() {
-            timer_id++;
+            timer_id = timer_id + 1;
             return timer_id;
         };
 
@@ -120,9 +121,22 @@ namespace handy {
         void EnableWrite(bool enable);
 
         //处理读写事件
-        void handleRead() { readcb(); }
+        void handleRead() {
+            try {
+                readcb();
+            } catch( std::exception) {
 
-        void handleWrite() { writecb(); }
+            }
+
+        }
+
+        void handleWrite() {
+            try {
+                writecb();
+            } catch( std::exception) {
+
+            }
+        }
 
         void handleError() { errorcb(); };
 

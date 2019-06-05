@@ -11,9 +11,11 @@ namespace handy {
         struct pollfd (*files) = new pollfd[_channels.size()];
         int poll_size = 0;
         for (auto &it : _channels) {
-            files[poll_size].fd = it.first;
-            files[poll_size].events = it.second->events;
-            poll_size++;
+            if (it.second != NULL){
+                files[poll_size].fd = it.first;
+                files[poll_size].events = it.second->events;
+                poll_size++;
+            }
         }
         int flag = poll(files, nfds_t(poll_size), waitMs);
         if (flag == 0) {
@@ -24,16 +26,22 @@ namespace handy {
 
             // 触发到事件
             for (int i = 0; i < poll_size; i++) {
-                if (files[i].revents | POLLIN) {
+                if (files[i].revents & POLLIN) {
                     // 可读
-                    _channels[files[i].fd]->handleRead();
+                    if (_channels[files[i].fd] != NULL){
+                        _channels[files[i].fd]->handleRead();
+                    }
                 }
-                if (files[i].revents | POLLOUT) {
+                if (files[i].revents & POLLOUT) {
                     // 可写
-                    _channels[files[i].fd]->handleWrite();
+                    if (_channels[files[i].fd] != NULL){
+                        _channels[files[i].fd]->handleWrite();
+                    }
                 }
-                if (files[i].revents | POLLERR) {
-                    _channels[files[i].fd]->handleError();
+                if (files[i].revents & POLLERR) {
+                    if (_channels[files[i].fd] != NULL){
+                        _channels[files[i].fd]->handleError();
+                    }
                 }
             }
         }

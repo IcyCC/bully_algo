@@ -6,6 +6,8 @@
 #define BULLY_ALGO_UTIL_H
 
 #include<string>
+#include <vector>
+#include <iostream>
 #include <netinet/in.h>
 
 namespace handy {
@@ -17,6 +19,37 @@ namespace handy {
         noncopyable(const noncopyable &) = delete;
         noncopyable &operator=(const noncopyable &) = delete;
     };
+
+    inline std::vector<std::string> SpliteString(const std::string& src,const std::string & sp) {
+        // 分割字符串
+        std::string::size_type pos1, pos2=0;
+        std::vector<std::string> v;
+        pos2 = src.find(sp);
+        pos1 = 0;
+        while (std::string::npos != pos2) {
+            v.push_back(src.substr(pos1, pos2 - pos1));
+
+            pos1 = pos2 + sp.size();
+            pos2 = src.find(sp, pos1);
+        }
+        if (pos1 != src.length()) {
+            v.push_back(src.substr(pos1));
+        }
+        return v;
+    };
+
+
+    inline bool IsEndWith(std::string s, std::string m) {
+        if (m.length() > s.length()) {
+            return false;
+        }
+        for (int i = 0; i < m.length(); i++) {
+            if (m[i] != s[s.length() - m.length() + i]) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     int64_t TimeMicro();
     inline int64_t TimeMilli() { return TimeMicro() / 1000; }
@@ -34,13 +67,14 @@ namespace handy {
         virtual std::string GetBuffer() = 0;
         virtual void Clear() = 0;
         virtual std::size_t Size() = 0;
-        virtual std::string GetSubstr(std::size_t pos, std::size_t n) = 0;
+        virtual std::string GetSubstr(std::size_t pos, std::size_t n)=0;
     };
 
     class BufferCRLF: public Buffer {
     private:
         std::string buffer;
         std::string sep;
+        std::string tmp_buffer;
     public:
         BufferCRLF(): sep("\r\n") {}
         ~BufferCRLF() = default;
@@ -55,8 +89,8 @@ namespace handy {
             if(pos == buffer.npos)
                 res = "";
             else {
-                res = buffer.substr(0, pos);
-                buffer = buffer.substr(pos);
+                res = buffer.substr(0, pos+sep.length());
+                buffer = buffer.substr(pos+sep.length());
             }
             return res;
         }
@@ -77,6 +111,10 @@ namespace handy {
         struct sockaddr_in addr_;
         IPv4Addr(const std::string &host, unsigned short port);
         IPv4Addr(const struct sockaddr_in &addr) : addr_(addr) {};
+    };
+
+    inline void PutLog(const std::string s) {
+        std::cout<<s<<std::endl;
     };
 }
 #endif //BULLY_ALGO_UTIL_H
